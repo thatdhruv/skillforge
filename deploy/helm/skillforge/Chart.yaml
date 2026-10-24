@@ -1,0 +1,6 @@
+apiVersion: v2
+name: skillforge
+description: Self-improving agent with verified skill memory (agent, memory service, Redpanda, Postgres/pgvector, dashboard)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

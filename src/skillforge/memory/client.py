@@ -28,8 +28,8 @@ class Memory(Protocol):
 
 
 class LocalMemory:
-    def __init__(self, embedder: HashEmbedder | None = None):
-        self.store = MemoryStore()
+    def __init__(self, embedder: HashEmbedder | None = None, rules: bool = True):
+        self.store = MemoryStore(rules=rules)
         self.emb = embedder or HashEmbedder()
 
     def add_episode(self, ep: dict, text: str) -> str:
@@ -41,8 +41,8 @@ class LocalMemory:
     def put_fact(self, subject, predicate, object, text, **kw):
         return self.store.put_fact(subject, predicate, object, text, self.emb.embed(text), **kw)
 
-    def search_facts(self, query, k=5, now=0.0):
-        return self.store.search_facts(query, self.emb.embed(query), k, now)
+    def search_facts(self, query, k=5, now=0.0, mode="hybrid"):
+        return self.store.search_facts(query, self.emb.embed(query), k, now, mode)
 
     def put_skill(self, name, source, docstring, params, **kw):
         return self.store.put_skill(name, source, docstring, params, self.emb.embed(f"{name} {docstring}"), **kw)
@@ -90,9 +90,9 @@ class HttpMemory:
         return self._post("/v1/facts", {"subject": subject, "predicate": predicate, "object": object, "text": text,
                                         "embedding": self.emb.embed(text), **kw})
 
-    def search_facts(self, query, k=5, now=0.0):
+    def search_facts(self, query, k=5, now=0.0, mode="hybrid"):
         return self._post("/v1/facts/search", {"query": query, "embedding": self.emb.embed(query), "k": k,
-                                                "now": now})
+                                                "now": now, "mode": mode})
 
     def put_skill(self, name, source, docstring, params, **kw):
         return self._post("/v1/skills", {"name": name, "source": source, "docstring": docstring, "params": params,

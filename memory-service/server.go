@@ -63,10 +63,10 @@ func orQuery(q string) string {
 
 // hybrid runs vector and full-text retrieval over a table and fuses them with RRF.
 // where must reference only $1..$n of args; the query/embedding are appended after them.
-func (s *Server) hybrid(ctx context.Context, table, where string, args []any, q string, emb []float64, k int) ([]map[string]any, error) {
+func (s *Server) hybrid(ctx context.Context, table, where string, args []any, q string, emb []float64, k int, mode string) ([]map[string]any, error) {
 	n := len(args)
 	var vecIDs, kwIDs []int64
-	if lit := vecLit(emb); lit != nil {
+	if lit := vecLit(emb); lit != nil && mode != "keyword" {
 		rows, err := s.db.Query(ctx, fmt.Sprintf(
 			`SELECT id, 1 - (embedding <=> $%d::vector) FROM %s WHERE %s AND embedding IS NOT NULL
 			 ORDER BY embedding <=> $%d::vector LIMIT 50`,
@@ -86,6 +86,9 @@ func (s *Server) hybrid(ctx context.Context, table, where string, args []any, q 
 		}
 		rows.Close()
 	}
+	if mode == "vector" {
+		return s.fuse(ctx, table, vecIDs, nil, k)
+	}
 	rows, err := s.db.Query(ctx, fmt.Sprintf(
 		`SELECT id FROM %s WHERE %s AND tsv @@ to_tsquery('english', $%d)
 		 ORDER BY ts_rank_cd(tsv, to_tsquery('english', $%d)) DESC LIMIT 50`,
@@ -102,6 +105,10 @@ func (s *Server) hybrid(ctx context.Context, table, where string, args []any, q 
 	}
 	rows.Close()
 
+	return s.fuse(ctx, table, vecIDs, kwIDs, k)
+}
+
+func (s *Server) fuse(ctx context.Context, table string, vecIDs, kwIDs []int64, k int) ([]map[string]any, error) {
 	order, score := rrf(vecIDs, kwIDs)
 	if len(order) > k {
 		order = order[:k]
@@ -382,6 +389,7 @@ func (s *Server) searchFacts(w http.ResponseWriter, r *http.Request) {
 		Embedding []float64 `json:"embedding"`
 		K         int       `json:"k"`
 		Now       *float64  `json:"now"`
+		Mode      string    `json:"mode"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		fail(w, 400, err)
@@ -391,7 +399,7 @@ func (s *Server) searchFacts(w http.ResponseWriter, r *http.Request) {
 		in.K = 5
 	}
 	out, err := s.hybrid(r.Context(), "facts", `status='active' AND (expires_at IS NULL OR expires_at > $1)`,
-		[]any{nowOr(in.Now)}, in.Query, in.Embedding, in.K)
+		[]any{nowOr(in.Now)}, in.Query, in.Embedding, in.K, in.Mode)
 	if err != nil {
 		fail(w, 500, err)
 		return
@@ -492,7 +500,7 @@ func (s *Server) searchSkills(w http.ResponseWriter, r *http.Request) {
 	if in.K <= 0 {
 		in.K = 5
 	}
-	out, err := s.hybrid(r.Context(), "skills", `status='active'`, nil, in.Query, in.Embedding, in.K)
+	out, err := s.hybrid(r.Context(), "skills", `status='active'`, nil, in.Query, in.Embedding, in.K, "")
 	if err != nil {
 		fail(w, 500, err)
 		return

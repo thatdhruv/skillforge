@@ -1,0 +1,66 @@
+{{- if .Values.postgres.enabled }}
+{{- $name := include "sf.pgSecret" . }}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace $name }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+type: Opaque
+data:
+  {{- if $existing }}
+  password: {{ index $existing.data "password" }}
+  {{- else }}
+  password: {{ default (randAlphaNum 24) .Values.postgres.auth.password | b64enc }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector: { app: {{ $name }} }
+  ports: [{ port: 5432, name: pg }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $name }}
+  replicas: 1
+  selector:
+    matchLabels: { app: {{ $name }} }
+  template:
+    metadata:
+      labels: { app: {{ $name }} }
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          env:
+            - { name: POSTGRES_USER, value: {{ .Values.postgres.auth.user | quote }} }
+            - { name: POSTGRES_DB, value: {{ .Values.postgres.auth.database | quote }} }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ $name }}, key: password } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports: [{ containerPort: 5432, name: pg }]
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", {{ .Values.postgres.auth.user | quote }}] }
+            periodSeconds: 5
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.postgres.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.postgres.storage }} } }
+{{- end }}

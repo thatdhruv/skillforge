@@ -1,0 +1,41 @@
+{{- $name := printf "%s-memory" (include "sf.name" .) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+spec:
+  selector: { app: {{ $name }} }
+  ports: [{ port: 8080, targetPort: http, name: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.memory.replicas }}
+  selector:
+    matchLabels: { app: {{ $name }} }
+  template:
+    metadata:
+      labels: { app: {{ $name }} }
+    spec:
+      {{- include "sf.podSecurity" . | nindent 6 }}
+      containers:
+        - name: memory
+          image: {{ include "sf.img" (dict "root" . "name" .Values.memory.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- include "sf.containerSecurity" . | nindent 10 }}
+          env:
+            {{- if .Values.postgres.enabled }}
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "sf.pgSecret" . }}, key: password } }
+            {{- end }}
+            - { name: DATABASE_URL, value: {{ include "sf.dbUrl" . | quote }} }
+            - { name: EMBED_DIM, value: {{ .Values.memory.embedDim | quote }} }
+            - { name: REAP_INTERVAL_SECONDS, value: {{ .Values.memory.reapIntervalSeconds | quote }} }
+          ports: [{ containerPort: 8080, name: http }]
+          readinessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 20, initialDelaySeconds: 10 }
+          resources: {{- toYaml .Values.memory.resources | nindent 12 }}

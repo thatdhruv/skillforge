@@ -1,0 +1,56 @@
+{{- $n := include "sf.name" . }}
+{{- $py := include "sf.img" (dict "root" . "name" .Values.python.image) }}
+{{- range $role := list "distiller" "gate" "worker" }}
+{{- $cfg := index $.Values.pipeline $role }}
+{{- if $cfg.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $n }}-{{ $role }}
+  labels: {{- include "sf.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ default 1 $cfg.replicas }}
+  selector:
+    matchLabels: { app: {{ $n }}-{{ $role }} }
+  template:
+    metadata:
+      labels:
+        app: {{ $n }}-{{ $role }}
+        sf-role: {{ $role }}
+    spec:
+      {{- include "sf.podSecurity" $ | nindent 6 }}
+      containers:
+        - name: {{ $role }}
+          image: {{ $py }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- include "sf.containerSecurity" $ | nindent 10 }}
+          {{- if eq $role "gate" }}
+          args: ["gate", "--min-cases", {{ $cfg.minCases | quote }}]
+          {{- else if eq $role "worker" }}
+          args: ["worker", "--n", {{ $cfg.steps | quote }}, "--llm", {{ $cfg.llm | quote }}, "--delay", {{ $cfg.delaySeconds | quote }}]
+          {{- else }}
+          args: ["distiller"]
+          {{- end }}
+          env:
+            - { name: KAFKA_BROKERS, value: {{ include "sf.brokers" $ | quote }} }
+            - { name: MEMORY_URL, value: "http://{{ $n }}-memory:8080" }
+            {{- if and (eq $role "worker") (eq $cfg.llm "anthropic") }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ $n }}-llm, key: apiKey } }
+            {{- end }}
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { cpu: "1", memory: 512Mi }
+      volumes: [{ name: tmp, emptyDir: { sizeLimit: 128Mi } }]
+{{- end }}
+{{- end }}
+{{- if and .Values.pipeline.worker.enabled (eq .Values.pipeline.worker.llm "anthropic") }}
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: {{ $n }}-llm }
+type: Opaque
+stringData: { apiKey: {{ required "secrets.anthropicApiKey is required for llm=anthropic" .Values.secrets.anthropicApiKey | quote }} }
+{{- end }}

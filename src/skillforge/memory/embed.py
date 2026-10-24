@@ -32,3 +32,19 @@ class HashEmbedder:
             v[i] += sgn * w
         n = math.sqrt(sum(x * x for x in v)) or 1.0
         return [x / n for x in v]
+
+
+class FastEmbedder:
+    """Neural embeddings (BAAI/bge-small-en-v1.5, 384-d, ONNX, CPU) via the optional ``fastembed`` package."""
+
+    def __init__(self, model: str = "BAAI/bge-small-en-v1.5"):
+        from fastembed import TextEmbedding
+
+        self.model = TextEmbedding(model)
+        self.dim = 384
+
+    def embed(self, text: str) -> list[float]:
+        return [float(x) for x in next(iter(self.model.embed([text])))]
+
+    def embed_many(self, texts: list[str]) -> list[list[float]]:
+        return [[float(x) for x in v] for v in self.model.embed(texts)]

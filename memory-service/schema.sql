@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS episodes (
     cost        double precision,
     trajectory  jsonb,
     meta        jsonb,
-    embedding   vector(256),
+    embedding   vector(__DIM__),
     created_at  double precision
 );
 CREATE INDEX IF NOT EXISTS episodes_vec ON episodes USING hnsw (embedding vector_cosine_ops);
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS facts (
     predicate       text NOT NULL,
     object          text NOT NULL,
     text            text NOT NULL,
-    embedding       vector(256),
+    embedding       vector(__DIM__),
     confidence      double precision NOT NULL DEFAULT 0.8,
     valid_from      double precision NOT NULL,
     expires_at      double precision,
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS skills (
     source          text NOT NULL,
     docstring       text NOT NULL,
     params          jsonb NOT NULL DEFAULT '[]',
-    embedding       vector(256),
+    embedding       vector(__DIM__),
     origin_episode  text,
     gate            jsonb NOT NULL DEFAULT '{}',
     status          text NOT NULL DEFAULT 'active',

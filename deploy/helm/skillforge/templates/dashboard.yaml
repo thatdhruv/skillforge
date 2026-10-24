@@ -1,0 +1,42 @@
+{{- if .Values.dashboard.enabled }}
+{{- $name := printf "%s-dashboard" (include "sf.name" .) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.dashboard.service.type }}
+  selector: { app: {{ $name }} }
+  ports: [{ port: {{ .Values.dashboard.service.port }}, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "sf.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: {{ $name }} }
+  template:
+    metadata:
+      labels: { app: {{ $name }} }
+    spec:
+      {{- include "sf.podSecurity" . | nindent 6 }}
+      containers:
+        - name: nginx
+          image: {{ include "sf.img" (dict "root" . "name" .Values.dashboard.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- include "sf.containerSecurity" . | nindent 10 }}
+          ports: [{ containerPort: 8080, name: http }]
+          readinessProbe: { httpGet: { path: /, port: http } }
+          volumeMounts:
+            - { name: cache, mountPath: /var/cache/nginx }
+            - { name: run, mountPath: /var/run }
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+      volumes:
+        - { name: cache, emptyDir: {} }
+        - { name: run, emptyDir: {} }
+{{- end }}

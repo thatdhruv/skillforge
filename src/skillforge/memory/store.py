@@ -27,7 +27,8 @@ def _tok(s: str) -> list[str]:
 
 
 class MemoryStore:
-    def __init__(self):
+    def __init__(self, rules: bool = True):
+        self.rules = rules          # False = ablation: append-only facts, no conflict handling or expiry
         self._ids = itertools.count(1)
         self.episodes: dict[str, dict] = {}
         self.facts: list[dict] = []
@@ -58,10 +59,15 @@ class MemoryStore:
                  confidence: float = 0.8, valid_from: float | None = None, ttl_seconds: float | None = None,
                  source_episode: str | None = None, now: float = 0.0) -> dict:
         vf = now if valid_from is None else valid_from
+        if not self.rules:
+            ttl_seconds = None
         new = {"id": f"f-{next(self._ids)}", "subject": subject, "predicate": predicate, "object": object,
                "text": text or f"{subject} {predicate} {object}", "embedding": embedding, "confidence": confidence,
                "valid_from": vf, "expires_at": None if ttl_seconds is None else vf + ttl_seconds,
                "last_confirmed": now, "status": "active", "superseded_by": None, "source_episode": source_episode}
+        if not self.rules:
+            self.facts.append(new)
+            return {"action": "created", "fact_id": new["id"]}
         cur = next((f for f in self.facts if f["status"] == "active" and f["subject"] == subject
                     and f["predicate"] == predicate and (f["expires_at"] is None or f["expires_at"] > now)), None)
         if cur is None:
@@ -87,9 +93,10 @@ class MemoryStore:
             return {"action": "history", "fact_id": new["id"]}
         return {"action": "rejected", "fact_id": cur["id"]}
 
-    def search_facts(self, query: str, embedding: list[float], k: int = 5, now: float = 0.0) -> list[dict]:
+    def search_facts(self, query: str, embedding: list[float], k: int = 5, now: float = 0.0,
+                     mode: str = "hybrid") -> list[dict]:
         live = [f for f in self.facts if self._alive(f, now)]
-        return self._hybrid(live, query, embedding, k, lambda f: f["text"], now)
+        return self._hybrid(live, query, embedding, k, lambda f: f["text"], now, mode)
 
     # ------------------------------------------------------------------ procedural
     def put_skill(self, name: str, source: str, docstring: str, params: list[str], embedding: list[float] | None,
@@ -156,7 +163,8 @@ class MemoryStore:
         f = Counter(x["status"] for x in self.facts)
         return {"episodes": len(self.episodes), "facts": dict(f), "skills": dict(c)}
 
-    def _hybrid(self, items: list[dict], query: str, emb: list[float], k: int, textf, now: float) -> list[dict]:
+    def _hybrid(self, items: list[dict], query: str, emb: list[float], k: int, textf, now: float,
+                mode: str = "hybrid") -> list[dict]:
         if not items:
             return []
         vec = sorted((i for i in items if i.get("embedding") and _cos(emb, i["embedding"]) >= MIN_SIMILARITY),
@@ -179,7 +187,7 @@ class MemoryStore:
         kw = [i for _, i in sorted(scored, key=lambda x: -x[0])[:50]]
         fused: dict[int, float] = {}
         by_id = {id(i): i for i in items}
-        for ranked in (vec, kw):
+        for ranked in ([vec] if mode == "vector" else [kw] if mode == "keyword" else [vec, kw]):
             for r, i in enumerate(ranked):
                 fused[id(i)] = fused.get(id(i), 0.0) + 1.0 / (RRF_K + r + 1)
         top = sorted(fused, key=lambda x: -fused[x])[:k]

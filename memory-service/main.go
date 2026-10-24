@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,7 +45,8 @@ func main() {
 	ctx := context.Background()
 	pool := connect(ctx, env("DATABASE_URL", "postgres://skillforge:skillforge@localhost:5432/skillforge"))
 	defer pool.Close()
-	if _, err := pool.Exec(ctx, schemaSQL); err != nil {
+	dim := env("EMBED_DIM", "256") // must match the embedder used by clients
+	if _, err := pool.Exec(ctx, strings.ReplaceAll(schemaSQL, "__DIM__", dim)); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
 	s := &Server{db: pool}

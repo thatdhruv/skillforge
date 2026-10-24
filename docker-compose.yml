@@ -23,5 +23,49 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.7
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --check=false
+      - --node-id=0
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+    ports: ["19092:19092"]
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      retries: 20
+
+  distiller:
+    build: { context: ., dockerfile: docker/python.Dockerfile }
+    command: ["distiller"]
+    environment: { KAFKA_BROKERS: "redpanda:9092" }
+    depends_on: { redpanda: { condition: service_healthy } }
+    profiles: ["pipeline"]
+
+  gate:
+    build: { context: ., dockerfile: docker/python.Dockerfile }
+    command: ["gate"]
+    environment: { KAFKA_BROKERS: "redpanda:9092", MEMORY_URL: "http://memory:8080" }
+    depends_on:
+      redpanda: { condition: service_healthy }
+      memory: { condition: service_started }
+    profiles: ["pipeline"]
+
+  worker:
+    build: { context: ., dockerfile: docker/python.Dockerfile }
+    command: ["worker", "--n", "120", "--delay", "0.2"]
+    environment: { KAFKA_BROKERS: "redpanda:9092", MEMORY_URL: "http://memory:8080" }
+    depends_on:
+      redpanda: { condition: service_healthy }
+      memory: { condition: service_started }
+    profiles: ["pipeline"]
+
 volumes:
   pgdata:

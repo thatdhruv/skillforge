@@ -1,0 +1,56 @@
+image:
+  registry: ""                # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/
+  pullPolicy: IfNotPresent
+  tag: "0.1.0"
+
+memory:
+  image: skillforge-memory
+  replicas: 2
+  embedDim: 256
+  reapIntervalSeconds: 60
+  resources:
+    requests: { cpu: 100m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+python:
+  image: skillforge-py
+
+pipeline:
+  distiller: { enabled: true, replicas: 1 }
+  gate:
+    enabled: true
+    replicas: 1
+    minCases: 3
+  worker:
+    enabled: true
+    replicas: 1
+    llm: sim                  # sim | anthropic (needs secrets.anthropicApiKey)
+    steps: 240
+    delaySeconds: 0.5
+
+dashboard:
+  enabled: true
+  image: skillforge-dashboard
+  service: { type: ClusterIP, port: 80 }
+
+# Bundled single-node stateful dependencies. For production use managed services
+# (RDS with the pgvector extension, MSK/Redpanda Cloud) and set the external* values instead.
+postgres:
+  enabled: true
+  image: pgvector/pgvector:pg16
+  storage: 10Gi
+  storageClassName: ""
+  externalUrl: ""             # postgres://user:pass@host:5432/db when enabled=false
+  auth: { user: skillforge, database: skillforge, password: "" }   # empty = generated once
+
+redpanda:
+  enabled: true
+  image: docker.redpanda.com/redpandadata/redpanda:v24.3.7
+  storage: 10Gi
+  externalBrokers: ""
+
+secrets:
+  anthropicApiKey: ""
+
+networkPolicy:
+  enabled: true               # worker pods (which execute generated code) may only reach memory, Redpanda and DNS
