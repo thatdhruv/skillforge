@@ -1,0 +1,59 @@
+{
+ "name": "hybrid_retrieval",
+ "steps": [
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "search",
+    "predicate": "port",
+    "object": "9000",
+    "text": "FYI: the search service listens on port 9000.",
+    "now": 0
+   },
+   "expect": {
+    "action": "created"
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "media",
+    "predicate": "port",
+    "object": "8443",
+    "text": "FYI: the media service listens on port 8443.",
+    "now": 0
+   },
+   "expect": {
+    "action": "created"
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "media",
+    "predicate": "region",
+    "object": "eu-central-1",
+    "text": "FYI: the media service runs in region eu-central-1.",
+    "now": 0
+   },
+   "expect": {
+    "action": "created"
+   }
+  },
+  {
+   "op": "search_facts",
+   "args": {
+    "query": "media port",
+    "k": 1,
+    "now": 1
+   },
+   "expect": {
+    "count": 1,
+    "top": {
+     "subject": "media",
+     "predicate": "port"
+    }
+   }
+  }
+ ]
+}

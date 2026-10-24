@@ -1,0 +1,137 @@
+{
+ "name": "skill_lifecycle",
+ "steps": [
+  {
+   "op": "put_skill",
+   "args": {
+    "name": "to_roman",
+    "source": "def to_roman(n):\n    return 'X'\n",
+    "docstring": "Convert an integer to a Roman numeral.",
+    "params": [
+     "n"
+    ],
+    "now": 1
+   },
+   "expect": {
+    "version": 1,
+    "status": "active"
+   }
+  },
+  {
+   "op": "put_skill",
+   "args": {
+    "name": "to_roman",
+    "source": "def to_roman(n):\n    return 'IX'\n",
+    "docstring": "Convert an integer to a Roman numeral.",
+    "params": [
+     "n"
+    ],
+    "now": 2
+   },
+   "expect": {
+    "version": 2,
+    "status": "active"
+   }
+  },
+  {
+   "op": "list_skills",
+   "args": {
+    "status": "active"
+   },
+   "expect": {
+    "names": [
+     "to_roman"
+    ],
+    "versions": [
+     2
+    ]
+   }
+  },
+  {
+   "op": "search_skills",
+   "args": {
+    "query": "roman numeral from integer",
+    "k": 3,
+    "now": 3
+   },
+   "expect": {
+    "count": 1,
+    "top": {
+     "name": "to_roman",
+     "version": 2
+    }
+   }
+  },
+  {
+   "op": "record_usage",
+   "args": {
+    "name": "to_roman",
+    "version": 2,
+    "success": true,
+    "now": 3
+   },
+   "expect": {
+    "status": "active"
+   }
+  },
+  {
+   "op": "record_usage",
+   "args": {
+    "name": "to_roman",
+    "version": 2,
+    "success": false,
+    "now": 4
+   },
+   "expect": {
+    "status": "active"
+   }
+  },
+  {
+   "op": "record_usage",
+   "args": {
+    "name": "to_roman",
+    "version": 2,
+    "success": false,
+    "now": 5
+   },
+   "expect": {
+    "status": "active"
+   }
+  },
+  {
+   "op": "record_usage",
+   "args": {
+    "name": "to_roman",
+    "version": 2,
+    "success": false,
+    "now": 6
+   },
+   "expect": {
+    "status": "active"
+   }
+  },
+  {
+   "op": "record_usage",
+   "args": {
+    "name": "to_roman",
+    "version": 2,
+    "success": false,
+    "now": 7
+   },
+   "expect": {
+    "status": "deprecated"
+   }
+  },
+  {
+   "op": "search_skills",
+   "args": {
+    "query": "roman numeral",
+    "k": 3,
+    "now": 8
+   },
+   "expect": {
+    "count": 0
+   }
+  }
+ ]
+}

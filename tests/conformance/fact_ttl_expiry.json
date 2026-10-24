@@ -1,0 +1,74 @@
+{
+ "name": "fact_ttl_expiry",
+ "steps": [
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "auth",
+    "predicate": "oncall",
+    "object": "bob",
+    "text": "This week's on-call engineer for auth is bob.",
+    "valid_from": 0,
+    "ttl_seconds": 100,
+    "now": 0
+   },
+   "expect": {
+    "action": "created"
+   }
+  },
+  {
+   "op": "search_facts",
+   "args": {
+    "query": "auth oncall",
+    "k": 3,
+    "now": 50
+   },
+   "expect": {
+    "count": 1,
+    "top": {
+     "object": "bob"
+    }
+   }
+  },
+  {
+   "op": "search_facts",
+   "args": {
+    "query": "auth oncall",
+    "k": 3,
+    "now": 150
+   },
+   "expect": {
+    "count": 0
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "auth",
+    "predicate": "oncall",
+    "object": "esha",
+    "text": "This week's on-call engineer for auth is esha.",
+    "valid_from": 200,
+    "ttl_seconds": 100,
+    "now": 200
+   },
+   "expect": {
+    "action": "created"
+   }
+  },
+  {
+   "op": "search_facts",
+   "args": {
+    "query": "auth oncall",
+    "k": 3,
+    "now": 210
+   },
+   "expect": {
+    "count": 1,
+    "top": {
+     "object": "esha"
+    }
+   }
+  }
+ ]
+}

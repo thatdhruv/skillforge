@@ -1,0 +1,90 @@
+{
+ "name": "fact_conflict_rules",
+ "steps": [
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "billing",
+    "predicate": "region",
+    "object": "us-east-1",
+    "text": "FYI: the billing service runs in region us-east-1.",
+    "valid_from": 10,
+    "now": 10
+   },
+   "expect": {
+    "action": "created"
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "billing",
+    "predicate": "region",
+    "object": "us-east-1",
+    "text": "FYI: the billing service runs in region us-east-1.",
+    "valid_from": 11,
+    "now": 11
+   },
+   "expect": {
+    "action": "reinforced"
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "billing",
+    "predicate": "region",
+    "object": "eu-west-1",
+    "text": "Update: billing has been moved to region eu-west-1.",
+    "valid_from": 20,
+    "now": 20
+   },
+   "expect": {
+    "action": "superseded"
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "billing",
+    "predicate": "region",
+    "object": "ap-south-1",
+    "text": "Archived note: billing used to run in region ap-south-1.",
+    "valid_from": 5,
+    "now": 21
+   },
+   "expect": {
+    "action": "history"
+   }
+  },
+  {
+   "op": "put_fact",
+   "args": {
+    "subject": "billing",
+    "predicate": "region",
+    "object": "us-west-2",
+    "text": "Conflicting claim billing region us-west-2",
+    "valid_from": 20,
+    "confidence": 0.5,
+    "now": 22
+   },
+   "expect": {
+    "action": "rejected"
+   }
+  },
+  {
+   "op": "search_facts",
+   "args": {
+    "query": "billing region",
+    "k": 3,
+    "now": 25
+   },
+   "expect": {
+    "count": 1,
+    "top": {
+     "object": "eu-west-1"
+    }
+   }
+  }
+ ]
+}
