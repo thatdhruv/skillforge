@@ -72,10 +72,11 @@ class GeminiLLM:
                 m = re.search(r"retry in ([\d.]+)s", r.text)
                 time.sleep(float(m.group(1)) + 1 if m else min(20, 2 ** attempt) + 0.5 * attempt)
                 continue
-            r.raise_for_status()
+            if r.status_code >= 400:
+                raise RuntimeError(f"Gemini API error: HTTP {r.status_code} {r.text[:300]}")
             break
         else:
-            r.raise_for_status()
+            raise RuntimeError(f"Gemini API unavailable after retries: HTTP {r.status_code} {r.text[:200]}")
         d = r.json()
         cand = (d.get("candidates") or [{}])[0]
         parts = (cand.get("content") or {}).get("parts") or []

@@ -16,7 +16,9 @@ cases where self-evolution made things *worse*.
 > LongMemEval retrieval. The model's behaviour is not: its competence, its error rate (`p_flaw = 0.55`) and how it uses
 > skills are my assumptions (see [`llm/sim.py`](src/skillforge/llm/sim.py)). So the results show that **the system and
 > the measurement harness work and surface the failure modes they should**; they do **not** show that a real LLM improves by
-> this much. To get real numbers: `ANTHROPIC_API_KEY=... skillforge eval --llm anthropic` (the harness is identical).
+> this much. A small run against a real model (Gemini 3.5 Flash-Lite) is reported in [section 6](#6-real-model-check-gemini-35-flash-lite):
+> the pipeline works end to end with it, but on these tasks the real model is already at ceiling, so it shows **no accuracy gain and
+> a token cost**. The harness is identical for every backend (`--llm sim | anthropic | gemini`).
 > The LongMemEval retrieval results are real (real data, real retrieval code, no simulated model).
 
 ---
@@ -125,7 +127,7 @@ Semantic retrieval is **hybrid**: pgvector cosine ∪ Postgres full-text (`ts_ra
 |---|---|---|
 | Agent | **LangGraph** (`retrieve → think → act`) | explicit graph, easy to trace trajectories |
 | Tools | **MCP** (`mcp` 2.x `MCPServer`), in-memory transport for experiments, stdio/HTTP for deployment | one tool surface for every LLM backend; the tool set *is* the experimental condition |
-| LLM | `AnthropicLLM` (real, default `claude-opus-5-5`, override with `SKILLFORGE_MODEL`) and `SimLLM` (offline) | reproducible without a key; one switch to go real |
+| LLM | `GeminiLLM` (tested with a real model), `AnthropicLLM` (implemented, **untested** - no key), and `SimLLM` (offline) | reproducible without a key; one switch to go real |
 | Event bus | **Redpanda** (Kafka API) behind a `Bus` interface; in-memory twin for tests | single binary, light on k8s; deterministic experiments |
 | Memory service | **Go** (`net/http`, `pgx`) + **Postgres 16 / pgvector** | small static binary; hybrid search in one database |
 | Rules reference | Python implementation of the same rules + **shared JSON conformance fixtures** run against both | experiments need thousands of fast runs; production needs Postgres; fixtures stop them drifting |
@@ -284,6 +286,33 @@ What this says:
 * Weak spots with the hashing embedder are *single-session-preference* questions (recall@5 53 % hybrid / 43 % vector): the evidence is paraphrastic, so lexical overlap with the question is low.
 * LongMemEval's questions often share vocabulary with their evidence, which flatters keyword search; this is retrieval only, not end-to-end QA accuracy.
 
+### 6. Real-model check (Gemini 3.5 Flash-Lite)
+
+A genuine LLM exercised the same agent, MCP tools, sandbox, distiller, gate and memory service logic. **This is a sanity check, not an
+experiment:** the free API tier allows 15 requests/min and 500/day, so I could afford one seed, a 50-step stream over **3 task families**
+(`duration`, `date_diff`, `balanced`), two conditions (Frozen vs Both) and 10 probe tasks per checkpoint. Model: `gemini-3.5-flash-lite`, thinking level `minimal`.
+
+| | Frozen | Both |
+|---|---|---|
+| Code accuracy, stream (40 tasks) | 40 / 40 | 40 / 40 |
+| Held-in / transfer / retention probes, step 0 → 50 | 3/3 → 3/3 for each | 3/3 → 3/3 for each |
+| Fact questions (stream) | 0 / 9 | **9 / 9** |
+| Mean tokens per code task | 916 | 1050 (1131 when a skill was used, 950 when not) |
+| Skills promoted / redundant / rejected / held | – | 3 / 4 / 2 / 6 |
+
+What it shows, honestly:
+
+* **The pipeline works with a real model**: real-model trajectories were distilled into skills, 3 passed the replay gate, and they were reused (8/8, 3/3 and 2/2 uses succeeded). The gate also rejected two candidates that failed *every* replay case (I did not investigate why) and de-duplicated four.
+* **No accuracy gain is measurable**, because a modern model already solves these tasks perfectly (ceiling). The simulated model's headroom was my assumption; real headroom needs harder tasks.
+* **Skills made code tasks cost more, not less**: +15 % tokens per task, because the retrieved skill catalogue is added to every prompt and the model still verifies by running code.
+  That is the opposite sign to the simulated result's accuracy story, and it is the kind of thing only a real model can show.
+* Memory helps on facts by construction (the frozen model cannot know them); notably, the frozen model tried to *find* the facts by introspecting the sandbox (`dir(...)`, `__builtins__`), which the AST screen blocked.
+* One seed and ~40 tasks per condition: treat all of this as anecdotal.
+
+```bash
+GEMINI_API_KEY=... SKILLFORGE_GEMINI_MODEL=gemini-3.5-flash-lite SKILLFORGE_RPM=7   python scripts/run_experiment.py --llm gemini --seeds 1 --n 50 --every 50 --small-probes 2   --families duration,date_diff,balanced --conds frozen,both --workers 2 --out results/gemini
+```
+
 ---
 
 ## Dashboard
@@ -325,7 +354,7 @@ curl -L -o data/longmemeval_s_cleaned.json https://huggingface.co/datasets/xiaow
 python scripts/run_longmemeval.py
 ```
 
-**With a real model:** `export ANTHROPIC_API_KEY=...; skillforge eval --llm anthropic --seeds 2 --n 120` (budget accordingly — every task is several model calls).
+**With a real model:** `ANTHROPIC_API_KEY=... python scripts/run_experiment.py --llm anthropic ...` or `GEMINI_API_KEY=... --llm gemini` (see section 6). Every task is several model calls, and free tiers are rate-limited; `SKILLFORGE_RPM` throttles the Gemini client.
 
 ### Tests
 
@@ -394,6 +423,7 @@ tests/ scripts/ docs/ results/
 
 ## Limitations and honest caveats
 
+* **The headline curves use a simulated model**, and the one real-model run (section 6) is tiny and at ceiling. `AnthropicLLM` has never been run against the real API.
 * **The headline curves use a simulated model.** They validate the pipeline and the measurement, not real-LLM improvement. The mechanisms behind the harm cases (a flaw that triggers on part of the inputs; lexical skill selection) are plausible for real models but their *rates* are assumptions.
 * The task families are small and synthetic; skills there are short functions. Real agent skills (tool sequences, prompts) are messier.
 * Fact extraction is rule-based (regexes on a fixed phrasing); an LLM extractor is the natural replacement and would add its own error.

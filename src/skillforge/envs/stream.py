@@ -97,13 +97,20 @@ def extract_facts(text: str, doc_ts: float) -> list[dict]:
 # -------------------------------------------------------------------- builders
 
 
-def _probes(seed: int, cp: int, world: World, early_fams: list[str], small: int = 0) -> dict[str, list[Task]]:   # small: 0 full, 1 reduced, 2 tiny
+def _probes(seed: int, cp: int, world: World, early_fams: list[str], small: int = 0,
+            fams: list[str] | None = None) -> dict[str, list[Task]]:   # small: 0 full, 1 reduced, 2 tiny
     ts = cp * HOUR
     r = Random(seed * 1009 + cp)
-    heldin = [code_task(f"p{cp}-h{i}", f, r, ts) for i, f in enumerate((TRAIN_FAMILIES[::2] if small >= 2 else TRAIN_FAMILIES * (1 if small else 2)))]
-    transfer = [code_task(f"p{cp}-t{i}", f, r, ts) for i, f in enumerate(TRANSFER_FAMILIES * (1 if small >= 2 else 2 if small else 4))]
+    if fams:        # restricted run: probe exactly these families and the composites built only from them
+        comps = [f for f in TRANSFER_FAMILIES if set(FAMILIES[f].components) <= set(fams)]
+        heldin_l, trans_l, early_fams = fams, comps, fams
+    else:
+        heldin_l = (TRAIN_FAMILIES[::2] if small >= 2 else TRAIN_FAMILIES * (1 if small else 2))
+        trans_l = TRANSFER_FAMILIES * (1 if small >= 2 else 2 if small else 4)
+    heldin = [code_task(f"p{cp}-h{i}", f, r, ts) for i, f in enumerate(heldin_l)]
+    transfer = [code_task(f"p{cp}-t{i}", f, r, ts) for i, f in enumerate(trans_l)]
     rr = Random(seed * 7 + 1)     # retention instances are identical at every checkpoint
-    retention = [code_task(f"p{cp}-r{i}", f, rr, ts) for i, f in enumerate(early_fams * (1 if small >= 2 else 2 if small else 4))]
+    retention = [code_task(f"p{cp}-r{i}", f, rr, ts) for i, f in enumerate(early_fams * (1 if (small >= 2 or fams) else 2 if small else 4))]
     fact: list[Task] = []
     known = [s for s in SERVICES if s in world.region and s in world.port]
     for i, svc in enumerate(r.sample(known, min(1 if small >= 2 else 2 if small else 4, len(known)))):
@@ -113,13 +120,14 @@ def _probes(seed: int, cp: int, world: World, early_fams: list[str], small: int 
     return {"heldin": heldin, "transfer": transfer, "retention": retention, "fact": fact}
 
 
-def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40, small_probes: int = 0) -> Stream:
+def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40, small_probes: int = 0,
+                 families: list[str] | None = None) -> Stream:
     rng = Random(seed)
     world = World()
     items: list[Task] = []
     checkpoints = list(range(0, n + 1, checkpoint_every))
     probes: dict[int, dict[str, list[Task]]] = {}
-    early: list[str] = Random(seed + 99).sample(TRAIN_FAMILIES, 4)   # the "old abilities" tracked for retention
+    early: list[str] = list(families) if families else Random(seed + 99).sample(TRAIN_FAMILIES, 4)   # the "old abilities" tracked for retention
     seen_early = 0
 
     init_obs: list[str] = []
@@ -131,7 +139,7 @@ def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40, small_prob
     ports = {s: rng.choice([80, 443, 8080, 8443, 9000]) for s in SERVICES}
 
     def snapshot(cp: int):
-        probes[cp] = _probes(seed, cp, copy.deepcopy(world), early, small_probes)
+        probes[cp] = _probes(seed, cp, copy.deepcopy(world), early, small_probes, families)
 
     for i in range(n):
         if i in checkpoints:
@@ -169,8 +177,8 @@ def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40, small_prob
         elif i >= 64 and roll < 0.46:
             items.append(oncall_task(tid, rng.choice(SERVICES), world, ts))
         else:
-            fam = rng.choice(TRAIN_FAMILIES)
-            if seen_early < 12:                       # teach the tracked families first
+            fam = rng.choice(families or TRAIN_FAMILIES)
+            if seen_early < 12 and not families:      # teach the tracked families first
                 fam = early[seen_early % 4]
                 seen_early += 1
             items.append(code_task(tid, fam, rng, ts))

@@ -72,15 +72,17 @@ def _row(base: dict, task: Task, traj, extra: dict | None = None) -> dict:
             "run_errors": traj.run_errors, "code": traj.final_code, **(extra or {})}
 
 
-async def _run(cond_name: str, seed: int, n: int, llm_kind: str, every: int = 40, small: int = 0) -> dict:
+async def _run(cond_name: str, seed: int, n: int, llm_kind: str, every: int = 40, small: int = 0,
+               families: list[str] | None = None) -> dict:
     cond = CONDITIONS[cond_name]
-    stream = build_stream(seed, n, every, small)
+    stream = build_stream(seed, n, every, small, families)
     mem = LocalMemory(rules=cond.memory_rules)
     learner = None
     if cond.use_memory or cond.use_skills:
         learner = Learner(mem, LearnConfig(cond.use_memory, cond.use_skills, cond.gate))
     ctx = ToolContext(memory=mem, use_memory=cond.use_memory, use_skills=cond.use_skills)
     rows: list[dict] = []
+    errors: list[str] = []
     timeline: list[dict] = []
     t0 = time.time()
     async with Client(build_server(ctx)) as c:
@@ -90,7 +92,12 @@ async def _run(cond_name: str, seed: int, n: int, llm_kind: str, every: int = 40
 
         async def attempt(task: Task):
             ctx.inputs, ctx.now = task.inputs, (lambda ts=task.ts: ts)
-            return await agent.solve(task.id, task.prompt, task.kind)
+            try:
+                return await agent.solve(task.id, task.prompt, task.kind)
+            except Exception as e:                      # a model/API failure counts as a failed task, not a crashed run
+                errors.append(f"{task.id}: {type(e).__name__}: {str(e)[:200]}")
+                from ..agent.trajectory import Trajectory
+                return Trajectory(task_id=task.id, prompt=task.prompt, kind=task.kind)
 
         for i, task in enumerate(stream.items):
             if i in stream.probes:
@@ -128,25 +135,26 @@ async def _run(cond_name: str, seed: int, n: int, llm_kind: str, every: int = 40
                                       "set": pset}, pt, await attempt(pt)))
     return {"cond": cond_name, "seed": seed, "n": n, "llm": llm_kind, "seconds": time.time() - t0, "rows": rows,
             "timeline": timeline, "skills": mem.list_skills(), "events": mem.events(),
-            "gate_log": learner.gate.log if learner and learner.gate else []}
+            "gate_log": learner.gate.log if learner and learner.gate else [], "errors": errors}
 
 
-def run_one(cond_name: str, seed: int, n: int, llm_kind: str, out: str, every: int = 40, small: int = 0) -> str:
+def run_one(cond_name: str, seed: int, n: int, llm_kind: str, out: str, every: int = 40, small: int = 0,
+            families: list[str] | None = None) -> str:
     path = Path(out) / f"{cond_name}_s{seed}.json"
     if path.exists():
         return str(path)
-    res = asyncio.run(_run(cond_name, seed, n, llm_kind, every, small))
+    res = asyncio.run(_run(cond_name, seed, n, llm_kind, every, small, families))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(res))
     return str(path)
 
 
 def run_many(conds: list[str], seeds: list[int], n: int, llm_kind: str, out: str, workers: int = 16,
-             every: int = 40, small: int = 0) -> list[str]:
+             every: int = 40, small: int = 0, families: list[str] | None = None) -> list[str]:
     jobs = [(c, s) for s in seeds for c in conds]
     done = []
     with ProcessPoolExecutor(max_workers=workers) as ex:
-        futs = {ex.submit(run_one, c, s, n, llm_kind, out, every, small): (c, s) for c, s in jobs}
+        futs = {ex.submit(run_one, c, s, n, llm_kind, out, every, small, families): (c, s) for c, s in jobs}
         for f in as_completed(futs):
             done.append(f.result())
             print(f"[{len(done)}/{len(jobs)}] finished {futs[f][0]} seed={futs[f][1]}", flush=True)
