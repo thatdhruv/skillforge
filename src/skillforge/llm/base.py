@@ -22,6 +22,8 @@ def estimate_tokens(text: str) -> int:
 
 
 def cost_usd(model: str, tokens_in: int, tokens_out: int) -> float:
+    if model not in PRICES and "SKILLFORGE_PRICE_IN" not in os.environ:
+        return 0.0     # unknown model: report tokens only rather than invent a price
     pin, pout = PRICES.get(model, PRICES["sim"])
     pin = float(os.environ.get("SKILLFORGE_PRICE_IN", pin))
     pout = float(os.environ.get("SKILLFORGE_PRICE_OUT", pout))

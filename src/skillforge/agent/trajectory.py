@@ -19,6 +19,7 @@ class Trajectory:
     skills_used: list[str] = field(default_factory=list)
     final_code: str = ""                                       # last code that ran without error
     run_errors: int = 0
+    last_stdout: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)

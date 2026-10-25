@@ -7,12 +7,12 @@ from pathlib import Path
 TEMPLATE = Path(__file__).with_name("template.html")
 
 
-def build(results: str, out: str) -> str:
+def build(results: str, out: str, run: str = "main") -> str:
     r = Path(results)
     data = {
-        "summary": json.loads((r / "main" / "summary.json").read_text()),
-        "harm_cases": json.loads((r / "main" / "harm_cases.json").read_text()),
-        "longmemeval": json.loads((r / "longmemeval.json").read_text()) if (r / "longmemeval.json").exists() else None,
+        "summary": json.loads((r / run / "summary.json").read_text()),
+        "harm_cases": json.loads((r / run / "harm_cases.json").read_text()),
+        "longmemeval": json.loads((r / "longmemeval.json").read_text()) if (r / "longmemeval.json").exists() and run == "main" else None,
     }
     # keep the page small: examples only carry what the page renders
     data["harm_cases"] = [{k: e[k] for k in ("cond", "family", "cause", "skills_used", "answer", "expected")}

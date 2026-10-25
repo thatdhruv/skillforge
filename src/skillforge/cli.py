@@ -111,8 +111,8 @@ def cmd_analyze(a):
 def cmd_report(a):
     from .dashboard.build import build
     from .dashboard.figures import make_all
-    print(make_all(a.results, a.figures))
-    print(build(a.results, a.html))
+    print(make_all(a.results, a.figures, a.run))
+    print(build(a.results, a.html, a.run))
 
 
 def cmd_demo(a):
@@ -138,12 +138,12 @@ def main(argv=None):
     m = sub.add_parser("serve-mcp"); m.add_argument("--transport", default="stdio", choices=["stdio", "http"]); m.set_defaults(f=cmd_serve_mcp)
     e = sub.add_parser("eval")
     e.add_argument("--seeds", type=int, default=10); e.add_argument("--n", type=int, default=240)
-    e.add_argument("--llm", default="sim", choices=["sim", "anthropic"]); e.add_argument("--out", default="results/main")
+    e.add_argument("--llm", default="sim", choices=["sim", "anthropic", "gemini"]); e.add_argument("--out", default="results/main")
     e.add_argument("--workers", type=int, default=16); e.add_argument("--no-ablations", action="store_true"); e.set_defaults(f=cmd_eval)
     an = sub.add_parser("analyze"); an.add_argument("--out", default="results/main"); an.set_defaults(f=cmd_analyze)
     r = sub.add_parser("report")
     r.add_argument("--results", default="results"); r.add_argument("--figures", default="docs/images")
-    r.add_argument("--html", default="docs/dashboard.html"); r.set_defaults(f=cmd_report)
+    r.add_argument("--html", default="docs/dashboard.html"); r.add_argument("--run", default="main"); r.set_defaults(f=cmd_report)
     d = sub.add_parser("demo"); d.add_argument("--seed", type=int, default=0); d.add_argument("--n", type=int, default=100); d.set_defaults(f=cmd_demo)
     a = p.parse_args(argv)
     a.f(a)

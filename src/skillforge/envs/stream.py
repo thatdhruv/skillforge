@@ -97,23 +97,23 @@ def extract_facts(text: str, doc_ts: float) -> list[dict]:
 # -------------------------------------------------------------------- builders
 
 
-def _probes(seed: int, cp: int, world: World, early_fams: list[str]) -> dict[str, list[Task]]:
+def _probes(seed: int, cp: int, world: World, early_fams: list[str], small: int = 0) -> dict[str, list[Task]]:   # small: 0 full, 1 reduced, 2 tiny
     ts = cp * HOUR
     r = Random(seed * 1009 + cp)
-    heldin = [code_task(f"p{cp}-h{i}", f, r, ts) for i, f in enumerate(TRAIN_FAMILIES * 2)]
-    transfer = [code_task(f"p{cp}-t{i}", f, r, ts) for i, f in enumerate(TRANSFER_FAMILIES * 4)]
+    heldin = [code_task(f"p{cp}-h{i}", f, r, ts) for i, f in enumerate((TRAIN_FAMILIES[::2] if small >= 2 else TRAIN_FAMILIES * (1 if small else 2)))]
+    transfer = [code_task(f"p{cp}-t{i}", f, r, ts) for i, f in enumerate(TRANSFER_FAMILIES * (1 if small >= 2 else 2 if small else 4))]
     rr = Random(seed * 7 + 1)     # retention instances are identical at every checkpoint
-    retention = [code_task(f"p{cp}-r{i}", f, rr, ts) for i, f in enumerate(early_fams * 4)]
+    retention = [code_task(f"p{cp}-r{i}", f, rr, ts) for i, f in enumerate(early_fams * (1 if small >= 2 else 2 if small else 4))]
     fact: list[Task] = []
     known = [s for s in SERVICES if s in world.region and s in world.port]
-    for i, svc in enumerate(r.sample(known, min(4, len(known)))):
+    for i, svc in enumerate(r.sample(known, min(1 if small >= 2 else 2 if small else 4, len(known)))):
         fact.append(endpoint_task(f"p{cp}-f{i}", svc, world, ts))
-    for i, svc in enumerate(r.sample(SERVICES, 3)):
+    for i, svc in enumerate(r.sample(SERVICES, 1 if small >= 2 else 2 if small else 3)):
         fact.append(oncall_task(f"p{cp}-o{i}", svc, world, ts))
     return {"heldin": heldin, "transfer": transfer, "retention": retention, "fact": fact}
 
 
-def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40) -> Stream:
+def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40, small_probes: int = 0) -> Stream:
     rng = Random(seed)
     world = World()
     items: list[Task] = []
@@ -131,7 +131,7 @@ def build_stream(seed: int, n: int = 240, checkpoint_every: int = 40) -> Stream:
     ports = {s: rng.choice([80, 443, 8080, 8443, 9000]) for s in SERVICES}
 
     def snapshot(cp: int):
-        probes[cp] = _probes(seed, cp, copy.deepcopy(world), early)
+        probes[cp] = _probes(seed, cp, copy.deepcopy(world), early, small_probes)
 
     for i in range(n):
         if i in checkpoints:

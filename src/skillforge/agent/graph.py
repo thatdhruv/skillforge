@@ -20,6 +20,7 @@ MAX_STEPS = 6
 
 SYSTEM = """You are a careful programming and operations assistant. Solve the task, then reply with a final line
 `FINAL: <answer>` containing only the answer. Use the tools to run code and to look things up; do not guess when a tool can verify.
+Once a tool result shows the answer, stop calling tools and reply with the FINAL line immediately; do not re-run to double-check.
 {skills}"""
 
 
@@ -71,6 +72,8 @@ class Agent:
         if resp.tool_calls and st["steps"] + 1 < MAX_STEPS:
             return {"messages": [msg], "steps": st["steps"] + 1}
         ans = resp.text.split("FINAL:", 1)[1].strip() if "FINAL:" in resp.text else resp.text.strip()
+        if not ans and self._traj.last_stdout:        # step budget exhausted: fall back to the last successful output
+            ans = self._traj.last_stdout
         return {"messages": [msg], "steps": st["steps"] + 1, "answer": ans, "done": True}
 
     async def _act(self, st: State) -> dict:
@@ -84,6 +87,8 @@ class Agent:
                     self._traj.run_errors += 1
                 else:
                     self._traj.final_code = call.args.get("code", "")
+                    lines = [ln for ln in json.loads(text).get("stdout", "").strip().splitlines() if ln.strip()]
+                    self._traj.last_stdout = lines[-1].strip() if lines else ""
                     self._traj.skills_used += json.loads(text).get("skills_used", [])
             self._traj.steps[-1]["results"].append(text[:500])
             out.append({"role": "tool", "tool_call_id": call.id, "name": call.name, "content": text})

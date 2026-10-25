@@ -55,6 +55,9 @@ def make_llm(kind: str, seed: int):
     if kind == "sim":
         from ..llm.sim import SimLLM
         return SimLLM(seed=seed)
+    if kind == "gemini":
+        from ..llm.gemini_llm import GeminiLLM
+        return GeminiLLM()
     from ..llm.anthropic_llm import AnthropicLLM
     return AnthropicLLM()
 
@@ -69,9 +72,9 @@ def _row(base: dict, task: Task, traj, extra: dict | None = None) -> dict:
             "run_errors": traj.run_errors, "code": traj.final_code, **(extra or {})}
 
 
-async def _run(cond_name: str, seed: int, n: int, llm_kind: str) -> dict:
+async def _run(cond_name: str, seed: int, n: int, llm_kind: str, every: int = 40, small: int = 0) -> dict:
     cond = CONDITIONS[cond_name]
-    stream = build_stream(seed, n)
+    stream = build_stream(seed, n, every, small)
     mem = LocalMemory(rules=cond.memory_rules)
     learner = None
     if cond.use_memory or cond.use_skills:
@@ -128,21 +131,22 @@ async def _run(cond_name: str, seed: int, n: int, llm_kind: str) -> dict:
             "gate_log": learner.gate.log if learner and learner.gate else []}
 
 
-def run_one(cond_name: str, seed: int, n: int, llm_kind: str, out: str) -> str:
+def run_one(cond_name: str, seed: int, n: int, llm_kind: str, out: str, every: int = 40, small: int = 0) -> str:
     path = Path(out) / f"{cond_name}_s{seed}.json"
     if path.exists():
         return str(path)
-    res = asyncio.run(_run(cond_name, seed, n, llm_kind))
+    res = asyncio.run(_run(cond_name, seed, n, llm_kind, every, small))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(res))
     return str(path)
 
 
-def run_many(conds: list[str], seeds: list[int], n: int, llm_kind: str, out: str, workers: int = 16) -> list[str]:
+def run_many(conds: list[str], seeds: list[int], n: int, llm_kind: str, out: str, workers: int = 16,
+             every: int = 40, small: int = 0) -> list[str]:
     jobs = [(c, s) for s in seeds for c in conds]
     done = []
     with ProcessPoolExecutor(max_workers=workers) as ex:
-        futs = {ex.submit(run_one, c, s, n, llm_kind, out): (c, s) for c, s in jobs}
+        futs = {ex.submit(run_one, c, s, n, llm_kind, out, every, small): (c, s) for c, s in jobs}
         for f in as_completed(futs):
             done.append(f.result())
             print(f"[{len(done)}/{len(jobs)}] finished {futs[f][0]} seed={futs[f][1]}", flush=True)

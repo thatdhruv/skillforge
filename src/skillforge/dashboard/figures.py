@@ -147,13 +147,16 @@ def longmemeval(lme: dict, out: Path) -> None:
     _save(fig, out, "longmemeval.png")
 
 
-def make_all(results: str, out: str) -> list[str]:
+def make_all(results: str, out: str, run: str = "main") -> list[str]:
     r, o = Path(results), Path(out)
     o.mkdir(parents=True, exist_ok=True)
-    s = json.loads((r / "main" / "summary.json").read_text())
+    s = json.loads((r / run / "summary.json").read_text())
     for f in (learning_curves, cost_curve, probes, harm, library):
-        f(s, o)
+        try:
+            f(s, o)
+        except KeyError:      # a smaller run may lack some conditions (e.g. ablations)
+            pass
     lme = r / "longmemeval.json"
-    if lme.exists():
+    if lme.exists() and run == "main":
         longmemeval(json.loads(lme.read_text()), o)
     return sorted(p.name for p in o.glob("*.png"))
