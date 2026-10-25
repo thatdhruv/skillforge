@@ -37,7 +37,7 @@ def load(path: str, per_type: int | None, seed: int = 0) -> list[dict]:
 def _turns(q: dict):
     for sid, sess in zip(q["haystack_session_ids"], q["haystack_sessions"]):
         for i, t in enumerate(sess):
-            yield sid, i, f"{t['role']}: {t['content']}"[:1200], bool(t.get("has_answer"))
+            yield sid, i, f"{t['role']}: {t['content']}"[:600], bool(t.get("has_answer"))
 
 
 def _make_embedder(kind: str):

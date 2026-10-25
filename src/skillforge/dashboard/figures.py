@@ -66,16 +66,18 @@ def probes(s: dict, out: Path) -> None:
     fig, axes = plt.subplots(2, 2, figsize=(11, 7), sharex=True)
     for ax, (key, title) in zip(axes.flat, sets):
         for c in ("frozen", "memory", "skills", "both"):
-            pts = s["probes"][c][key]
+            pts = [p for p in s["probes"][c][key] if not (key == "fact" and p["cp"] == 0)]  # empty world: trivial
             x = [p["cp"] for p in pts]
-            ax.plot(x, [p["mean"] for p in pts], color=_col(c), lw=2, marker="o", ms=4, label=LABEL[c])
+            under = c in ("frozen", "skills") and key in ("fact",) or c == "frozen"   # identical curves stay visible
+            ax.plot(x, [p["mean"] for p in pts], color=_col(c), lw=4.5 if under else 2, ls="-", alpha=0.45 if under else 1,
+                    marker="o", ms=4, label=LABEL[c], zorder=1 if under else 3)
             ax.fill_between(x, [p["lo"] for p in pts], [p["hi"] for p in pts], color=_col(c), alpha=0.1, lw=0)
         ax.set_title(title, loc="left", color=INK, fontsize=11)
         ax.set_ylim(-0.02, 1.03)
     for ax in axes[1]:
         ax.set_xlabel("checkpoint (stream step)")
     axes[0][0].legend(frameon=False, loc="lower right")
-    fig.text(0.01, 0.0, "Read-only probes: no learning happens while they run. Same tasks for every condition.",
+    fig.text(0.01, 0.0, "Read-only probes: no learning happens while they run. Same tasks for every condition. Curves that coincide (e.g. Frozen = Memory on code tasks) are drawn on top of each other.",
              color=MUTED, fontsize=9)
     fig.tight_layout()
     _save(fig, out, "probes.png")
@@ -83,7 +85,7 @@ def probes(s: dict, out: Path) -> None:
 
 def harm(s: dict, out: Path) -> None:
     h = s["harm"]
-    order = [c for c in ("memory", "skills", "both", "both_weakgate", "both_nogate") if c in h]
+    order = [c for c in ("skills", "both", "both_weakgate", "both_nogate") if c in h]
     fig, ax = plt.subplots(figsize=(8.2, 3.9))
     y = range(len(order))
     ax.barh([i + 0.2 for i in y], [h[c]["helped"] for c in order], height=0.38, color="#1baf7a", label="fixed a task the frozen agent failed")
@@ -94,7 +96,8 @@ def harm(s: dict, out: Path) -> None:
         ax.text(h[c]["harmed"] + 1, i - 0.2, str(h[c]["harmed"]), va="center", color=MUTED, fontsize=9)
     ax.set_xlabel("code tasks, summed over all seeds (paired by task)")
     ax.set_title("Where self-evolution helped and where it hurt", loc="left", color=INK, fontsize=11)
-    ax.legend(frameon=False, loc="lower right", fontsize=9)
+    ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2, fontsize=9)
+    ax.set_xlim(0, 800)
     ax.grid(axis="y", visible=False)
     _save(fig, out, "harm.png")
 
@@ -109,14 +112,14 @@ def library(s: dict, out: Path) -> None:
     ax[0].plot(x, d["deprecated"], color="#e34948", lw=2, label="deprecated")
     ax[0].plot(x, d["superseded"], color="#eda100", lw=2, label="superseded by a new version")
     ax[0].set_title("Skill library growth ('Both', mean of seeds)", loc="left", color=INK, fontsize=11)
-    ax[0].set_xlabel("stream step"); ax[0].set_ylabel("skills"); ax[0].legend(frameon=False, fontsize=9)
+    ax[0].set_xlabel("stream step"); ax[0].set_ylabel("skills"); ax[0].legend(frameon=False, fontsize=9, loc="center right")
     names = [c for c in ("skills", "both", "both_weakgate", "both_nogate") if c in lib]
     w = 0.2
     for j, kind, col in ((0, "promoted", "#1baf7a"), (1, "rejected", "#e34948"), (2, "insufficient", "#9a9893"), (3, "redundant", "#2a78d6")):
         ax[1].bar([i + (j - 1.5) * w for i in range(len(names))], [lib[c][kind][-1] for c in names], w * 0.9, color=col, label=kind)
     ax[1].set_xticks(range(len(names))); ax[1].set_xticklabels([LABEL[c] for c in names], fontsize=8)
     ax[1].set_title("What the gate decided (per run)", loc="left", color=INK, fontsize=11)
-    ax[1].legend(frameon=False, fontsize=9); ax[1].grid(axis="x", visible=False)
+    ax[1].legend(frameon=False, fontsize=9, loc="upper left", ncol=2); ax[1].set_ylim(0, 31); ax[1].grid(axis="x", visible=False)
     _save(fig, out, "library.png")
 
 

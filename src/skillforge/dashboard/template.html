@@ -41,7 +41,7 @@ button{background:none;border:1px solid var(--line);color:var(--ink2);border-rad
 <div class="card"><h2>Cost per 1000 tasks (USD)</h2><p class="sub">Billed at the configured model's list price.</p><div id="cost"></div></div>
 </section>
 <section class="card"><h2>Transfer, retention and facts (read-only probes)</h2><p class="sub">Same tasks for every condition; no learning while probing.</p><div class="grid2" id="probes"></div></section>
-<section class="card"><h2>Skill library: growth and retention</h2><p class="sub">'Both' condition, mean over seeds.</p><div class="grid2"><div id="lib"></div><div id="libtab"></div></div></section>
+<section class="card"><h2>Skill library: growth and retention</h2><p class="sub">'Both' condition, mean over seeds.</p><div class="grid2"><div><div id="lib"></div><div class="legend"><span><i style="background:var(--c-skills)"></i>active</span><span><i style="background:var(--c-frozen)"></i>promoted (cumulative)</span><span><i style="background:var(--bad)"></i>deprecated</span><span><i style="background:var(--warn)"></i>superseded</span></div></div><div id="libtab"></div></div></section>
 <section class="card"><h2>When self-evolution made things worse</h2><p class="sub">Paired against the frozen agent on identical tasks.</p><div id="harm"></div><h3 style="font-size:13px;margin:14px 0 4px">Examples</h3><div id="ex"></div></section>
 <section class="card"><h2>Memory retrieval on LongMemEval</h2><p class="sub">recall_any@k over distinct sessions.</p><div id="lme"></div></section>
 </main>

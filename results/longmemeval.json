@@ -1,0 +1,444 @@
+{
+ "hash": {
+  "embedder": "hash",
+  "questions": 470,
+  "types": [
+   "knowledge-update",
+   "multi-session",
+   "single-session-assistant",
+   "single-session-preference",
+   "single-session-user",
+   "temporal-reasoning"
+  ],
+  "modes": {
+   "vector": {
+    "overall": {
+     "recall@1": {
+      "mean": 0.4574468085106383,
+      "lo": 0.4148936170212766,
+      "hi": 0.5042553191489362
+     },
+     "recall@3": {
+      "mean": 0.6574468085106383,
+      "lo": 0.6095212765957447,
+      "hi": 0.7042553191489361
+     },
+     "recall@5": {
+      "mean": 0.7404255319148936,
+      "lo": 0.6967553191489362,
+      "hi": 0.7798404255319148
+     },
+     "recall@10": {
+      "mean": 0.8425531914893617,
+      "lo": 0.8106382978723404,
+      "hi": 0.874468085106383
+     },
+     "turn_hit@10": {
+      "mean": 0.6,
+      "lo": 0.5574468085106383,
+      "hi": 0.648936170212766
+     }
+    },
+    "by_type": {
+     "knowledge-update": {
+      "recall@1": 0.75,
+      "recall@3": 0.9305555555555556,
+      "recall@5": 0.9444444444444444,
+      "recall@10": 0.9861111111111112
+     },
+     "multi-session": {
+      "recall@1": 0.39669421487603307,
+      "recall@3": 0.6694214876033058,
+      "recall@5": 0.7768595041322314,
+      "recall@10": 0.8677685950413223
+     },
+     "single-session-assistant": {
+      "recall@1": 0.44642857142857145,
+      "recall@3": 0.6071428571428571,
+      "recall@5": 0.6607142857142857,
+      "recall@10": 0.8392857142857143
+     },
+     "single-session-preference": {
+      "recall@1": 0.1,
+      "recall@3": 0.3,
+      "recall@5": 0.43333333333333335,
+      "recall@10": 0.6
+     },
+     "single-session-user": {
+      "recall@1": 0.46875,
+      "recall@3": 0.75,
+      "recall@5": 0.8125,
+      "recall@10": 0.859375
+     },
+     "temporal-reasoning": {
+      "recall@1": 0.4330708661417323,
+      "recall@3": 0.5511811023622047,
+      "recall@5": 0.6614173228346457,
+      "recall@10": 0.7874015748031497
+     }
+    }
+   },
+   "keyword": {
+    "overall": {
+     "recall@1": {
+      "mean": 0.8340425531914893,
+      "lo": 0.8,
+      "hi": 0.8659574468085106
+     },
+     "recall@3": {
+      "mean": 0.9191489361702128,
+      "lo": 0.8936170212765957,
+      "hi": 0.9415425531914893
+     },
+     "recall@5": {
+      "mean": 0.9425531914893617,
+      "lo": 0.9201595744680852,
+      "hi": 0.9628191489361702
+     },
+     "recall@10": {
+      "mean": 0.9659574468085106,
+      "lo": 0.951063829787234,
+      "hi": 0.9808510638297873
+     },
+     "turn_hit@10": {
+      "mean": 0.874468085106383,
+      "lo": 0.8435638297872341,
+      "hi": 0.8989893617021276
+     }
+    },
+    "by_type": {
+     "knowledge-update": {
+      "recall@1": 0.9305555555555556,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "multi-session": {
+      "recall@1": 0.8347107438016529,
+      "recall@3": 0.9256198347107438,
+      "recall@5": 0.9421487603305785,
+      "recall@10": 0.9586776859504132
+     },
+     "single-session-assistant": {
+      "recall@1": 0.9642857142857143,
+      "recall@3": 0.9642857142857143,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-preference": {
+      "recall@1": 0.3333333333333333,
+      "recall@3": 0.5666666666666667,
+      "recall@5": 0.6666666666666666,
+      "recall@10": 0.8333333333333334
+     },
+     "single-session-user": {
+      "recall@1": 0.875,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "temporal-reasoning": {
+      "recall@1": 0.8188976377952756,
+      "recall@3": 0.889763779527559,
+      "recall@5": 0.9212598425196851,
+      "recall@10": 0.952755905511811
+     }
+    }
+   },
+   "hybrid": {
+    "overall": {
+     "recall@1": {
+      "mean": 0.6957446808510638,
+      "lo": 0.6520744680851064,
+      "hi": 0.7382978723404255
+     },
+     "recall@3": {
+      "mean": 0.8404255319148937,
+      "lo": 0.8085106382978723,
+      "hi": 0.8734574468085106
+     },
+     "recall@5": {
+      "mean": 0.8893617021276595,
+      "lo": 0.8595744680851064,
+      "hi": 0.9148936170212766
+     },
+     "recall@10": {
+      "mean": 0.9468085106382979,
+      "lo": 0.9276595744680851,
+      "hi": 0.9638297872340426
+     },
+     "turn_hit@10": {
+      "mean": 0.7723404255319148,
+      "lo": 0.7319148936170212,
+      "hi": 0.8106382978723404
+     }
+    },
+    "by_type": {
+     "knowledge-update": {
+      "recall@1": 0.9027777777777778,
+      "recall@3": 0.9722222222222222,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "multi-session": {
+      "recall@1": 0.7107438016528925,
+      "recall@3": 0.8925619834710744,
+      "recall@5": 0.9421487603305785,
+      "recall@10": 0.9669421487603306
+     },
+     "single-session-assistant": {
+      "recall@1": 0.7142857142857143,
+      "recall@3": 0.8035714285714286,
+      "recall@5": 0.8392857142857143,
+      "recall@10": 0.9285714285714286
+     },
+     "single-session-preference": {
+      "recall@1": 0.1,
+      "recall@3": 0.5,
+      "recall@5": 0.5333333333333333,
+      "recall@10": 0.7
+     },
+     "single-session-user": {
+      "recall@1": 0.765625,
+      "recall@3": 0.875,
+      "recall@5": 0.90625,
+      "recall@10": 0.984375
+     },
+     "temporal-reasoning": {
+      "recall@1": 0.6614173228346457,
+      "recall@3": 0.7952755905511811,
+      "recall@5": 0.8740157480314961,
+      "recall@10": 0.9448818897637795
+     }
+    }
+   }
+  },
+  "random_baseline": {
+   "recall@1": 0.021075930849291716,
+   "recall@3": 0.06322779254787514,
+   "recall@5": 0.10537965424645858,
+   "recall@10": 0.21075930849291716
+  }
+ },
+ "neural": {
+  "embedder": "neural",
+  "questions": 36,
+  "types": [
+   "knowledge-update",
+   "multi-session",
+   "single-session-assistant",
+   "single-session-preference",
+   "single-session-user",
+   "temporal-reasoning"
+  ],
+  "modes": {
+   "vector": {
+    "overall": {
+     "recall@1": {
+      "mean": 0.9166666666666666,
+      "lo": 0.8333333333333334,
+      "hi": 1.0
+     },
+     "recall@3": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "recall@5": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "recall@10": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "turn_hit@10": {
+      "mean": 0.9166666666666666,
+      "lo": 0.8333333333333334,
+      "hi": 1.0
+     }
+    },
+    "by_type": {
+     "knowledge-update": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "multi-session": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-assistant": {
+      "recall@1": 0.8333333333333334,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-preference": {
+      "recall@1": 0.8333333333333334,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-user": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "temporal-reasoning": {
+      "recall@1": 0.8333333333333334,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     }
+    }
+   },
+   "keyword": {
+    "overall": {
+     "recall@1": {
+      "mean": 0.8333333333333334,
+      "lo": 0.6944444444444444,
+      "hi": 0.9444444444444444
+     },
+     "recall@3": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "recall@5": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "recall@10": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "turn_hit@10": {
+      "mean": 0.8888888888888888,
+      "lo": 0.7777777777777778,
+      "hi": 0.9722222222222222
+     }
+    },
+    "by_type": {
+     "knowledge-update": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "multi-session": {
+      "recall@1": 0.6666666666666666,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-assistant": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-preference": {
+      "recall@1": 0.5,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-user": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "temporal-reasoning": {
+      "recall@1": 0.8333333333333334,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     }
+    }
+   },
+   "hybrid": {
+    "overall": {
+     "recall@1": {
+      "mean": 0.9722222222222222,
+      "lo": 0.9166666666666666,
+      "hi": 1.0
+     },
+     "recall@3": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "recall@5": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "recall@10": {
+      "mean": 1.0,
+      "lo": 1.0,
+      "hi": 1.0
+     },
+     "turn_hit@10": {
+      "mean": 0.9444444444444444,
+      "lo": 0.8333333333333334,
+      "hi": 1.0
+     }
+    },
+    "by_type": {
+     "knowledge-update": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "multi-session": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-assistant": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-preference": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "single-session-user": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     },
+     "temporal-reasoning": {
+      "recall@1": 0.8333333333333334,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0
+     }
+    }
+   }
+  },
+  "random_baseline": {
+   "recall@1": 0.020873829338653258,
+   "recall@3": 0.06262148801595976,
+   "recall@5": 0.10436914669326629,
+   "recall@10": 0.20873829338653258
+  }
+ }
+}

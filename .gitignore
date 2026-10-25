@@ -10,3 +10,6 @@ data/
 dist/
 memory-service/bin/
 node_modules/
+
+# raw per-run results are large; summaries are committed
+results/main/*_s[0-9]*.json
