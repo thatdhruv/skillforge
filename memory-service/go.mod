@@ -1,4 +1,4 @@
-module github.com/dhruv/skillforge/memory-service
+module github.com/thatdhruv/skillforge/memory-service
 
 go 1.25.0
 
